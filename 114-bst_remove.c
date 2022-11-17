@@ -1,99 +1,128 @@
 #include "binary_trees.h"
 
-bst_t *inorder_successor(bst_t *root);
-bst_t *bst_delete(bst_t *root, bst_t *node);
-bst_t *bst_remove_recursive(bst_t *root, bst_t *node, int value);
-bst_t *bst_remove(bst_t *root, int value);
-
 /**
- * inorder_successor - Returns the minimum value of a binary search tree.
- * @root: A pointer to the root node of the BST to search.
- *
- * Return: The minimum value in @tree.
+ * r_case - removes a node from a Binary Search Tree for node->right case
+ * @root: tree root
+ * @node: node to delete
+ * Return: pointer the tree root
  */
-bst_t *inorder_successor(bst_t *root)
+bst_t *r_case(bst_t *node, bst_t *root)
 {
-	while (root->left != NULL)
-		root = root->left;
+	node->right->left = node->left;
+	node->right->parent = node->parent;
+	if (node->parent)
+	{
+		if (node == node->parent->left)
+			node->parent->left = node->right;
+		if (node == node->parent->right)
+			node->parent->right = node->right;
+	}
+	if (node->left)
+		node->left->parent = node->right;
+	if (root == node)
+		root = node->right;
+	free(node);
 	return (root);
 }
 
 /**
- * bst_delete - Deletes a node from a binary search tree.
- * @root: A pointer to the root node of the BST.
- * @node: A pointer to the node to delete from the BST.
- *
- * Return: A pointer to the new root node after deletion.
+ * r_l_case - removes a node from a Binary Search Tree for node->right->l case
+ * @root: tree root
+ * @node: node to delete
+ * Return: pointer the tree root
  */
-bst_t *bst_delete(bst_t *root, bst_t *node)
+bst_t *r_l_case(bst_t *node, bst_t *root)
 {
-	bst_t *parent = node->parent, *successor = NULL;
-
-	/* No children or right-child only */
-	if (node->left == NULL)
+	node->right->left->right = node->right;
+	node->right->left->parent = node->parent;
+	node->right->left->left = node->left;
+	if (node->left)
+		node->left->parent = node->right->left;
+	node->right->parent = node->right->left;
+	if (root == node)
+		root = node->right->left;
+	else
 	{
-		if (parent != NULL && parent->left == node)
-			parent->left = node->right;
-		else if (parent != NULL)
-			parent->right = node->right;
-		if (node->right != NULL)
-			node->right->parent = parent;
-		free(node);
-		return (parent == NULL ? node->right : root);
+		if (node == node->parent->left)
+			node->parent->left = node->right->left;
+		if (node == node->parent->right)
+			node->parent->right = node->right->left;
 	}
-
-	/* Left-child only */
-	if (node->right == NULL)
-	{
-		if (parent != NULL && parent->left == node)
-			parent->left = node->left;
-		else if (parent != NULL)
-			parent->right = node->left;
-		if (node->left != NULL)
-			node->left->parent = parent;
-		free(node);
-		return (parent == NULL ? node->left : root);
-	}
-
-	/* Two children */
-	successor = inorder_successor(node->right);
-	node->n = successor->n;
-
-	return (bst_delete(root, successor));
+	node->right->left = NULL;
+	free(node);
+	return (root);
 }
 
 /**
- * bst_remove_recursive - Removes a node from a binary search tree recursively.
- * @root: A pointer to the root node of the BST to remove a node from.
- * @node: A pointer to the current node in the BST.
- * @value: The value to remove from the BST.
+ * binary_tree_is_leaf - checks if a node is a leaf
  *
- * Return: A pointer to the root node after deletion.
+ * @node: pointer to the node to check
+ * Return: 1 if node is a leaf, otherwise 0
  */
-bst_t *bst_remove_recursive(bst_t *root, bst_t *node, int value)
+int binary_tree_is_leaf(const binary_tree_t *node)
 {
-	if (node != NULL)
-	{
-		if (node->n == value)
-			return (bst_delete(root, node));
-		if (node->n > value)
-			return (bst_remove_recursive(root, node->left, value));
-		return (bst_remove_recursive(root, node->right, value));
-	}
-	return (NULL);
+	int leaf = 0;
+
+	if (node && !(node->left) && !(node->right))
+		leaf = 1;
+
+	return (leaf);
 }
 
 /**
- * bst_remove - Removes a node from a binary search tree.
- * @root: A pointer to the root node of the BST to remove a node from.
- * @value: The value to remove in the BST.
+ * bst_search - searches for a value in a Binary Search Tree
  *
- * Return: A pointer to the new root node after deletion.
- *
- * Description: If the node to be deleted has two children, it
- *              is replaced with its first in-order successor.
+ * @tree: tree root
+ * @value: node value
+ * Return: pointer the found node
+ */
+bst_t *bst_search(const bst_t *tree, int value)
+{
+	if (tree && value < tree->n)
+		return (bst_search(tree->left, value));
+
+	if (tree && value > tree->n)
+		return (bst_search(tree->right, value));
+
+	return ((bst_t *)tree);
+}
+
+/**
+ * bst_remove - removes a node from a Binary Search Tree
+ * @root: tree root
+ * @value: node value
+ * Return: pointer the tree root
  */
 bst_t *bst_remove(bst_t *root, int value)
 {
-	return (bst_remove_recursive(root, root, value));
+	bst_t *node;
+
+	node = bst_search(root, value);
+
+	if (node != NULL)
+	{
+		if (binary_tree_is_leaf(node) == 1)
+		{
+			if (node == node->parent->left)
+				node->parent->left = NULL;
+			if (node == node->parent->right)
+				node->parent->right = NULL;
+			free(node);
+			return (root);
+		}
+		if (node->right && node->right->left)
+			root = r_l_case(node, root);
+		else if (node->right)
+			root = r_case(node, root);
+		else
+		{
+			if (node->parent)
+				node->parent->right = node->left;
+			node->left->parent = node->parent;
+			if (root == node)
+				root = node->left;
+			free(node);
+		}
+	}
+	return (root);
 }
