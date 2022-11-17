@@ -1,40 +1,33 @@
 #include "binary_trees.h"
 
 /**
- * binary_tree_rotate_right - Rotate binary tree to the right
- * @tree: root node of binary tree
- * Return: new root of the tree
+ * isBST - Checks if tree is a Binary Search Tree
+ * @t: root of tree
+ * @min: minimum range of data
+ * @max: maximum range of data
+ * Return: 1 if TRUE. 0 if FALSE
  */
-binary_tree_t *binary_tree_rotate_right(binary_tree_t *tree)
+int isBST(const binary_tree_t *t, int min, int max)
 {
-	binary_tree_t *root = NULL;
-	binary_tree_t *gChild = NULL;
-	binary_tree_t *lChild = NULL;
+	if (!t)
+		return (1);
 
+	if ((t->n < min) || (t->n > max))
+		return (0);
+	if ((t->n == min) || (t->n == max))
+		return (0);
+	return (isBST(t->left, min, t->n) && isBST(t->right, t->n, max));
+}
+
+/**
+ * binary_tree_is_bst - Wrapper fn to check if tree is a Binary Search Tree
+ * @tree: root of tree
+ * Return: 1 if TRUE. 0 if FALSE
+ */
+int binary_tree_is_bst(const binary_tree_t *tree)
+{
 	if (!tree)
-		return (NULL);
+		return (0);
 
-	if (tree && !tree->right && !tree->left)
-		return (tree);
-
-	/* Initialize pointers */
-	root = tree->left;
-	lChild = tree->left;
-	if (tree->left)
-		if (tree->left->right)
-			gChild = tree->left->right;
-
-	tree->parent = lChild;
-	lChild->parent = NULL;
-	lChild->right = tree;
-
-	if (gChild)
-	{
-		tree->left = gChild;
-		gChild->parent = tree;
-	}
-	else
-		tree->left = NULL;
-
-	return (root);
+	return (isBST(tree, -2147483648, 2147483647));
 }
